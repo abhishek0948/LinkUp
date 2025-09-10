@@ -3,28 +3,25 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   phoneNumber: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true
   },
   phoneSuffix: {
     type: String,
     unique: false,
-    required: true,
   },
   userName: {
     type: String,
-    required: true,
   },
   email: {
     type: String,
-    required: true,
     unique: true, 
     lowercase: true,
     trim: true, 
     match: [
       /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/,
       "Please enter a valid email address",
-    ], 
+    ],  
   },
   emailOtp: {
     type: String
