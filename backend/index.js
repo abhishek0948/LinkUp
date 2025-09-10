@@ -2,16 +2,25 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const bodyParser = require('body-parser');
+
 const connectDB = require('./config/dbConnect');
+const authRoutes = require('./routes/auth.Route');
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+app.use(express.json());
+app.use(cookieParser());
+app.use(bodyParser.urlencoded({extended:true}));
+
+app.use('/api/auth',authRoutes);
+
 const startServer = async () => {
     try {
-        await connectDB();  // wait until DB is connected
+        await connectDB();  
         app.listen(PORT, () => {
             console.log(`Server is running on port ${PORT}`);
         });

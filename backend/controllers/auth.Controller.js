@@ -93,7 +93,7 @@ const verifyOtp = async (req,res) => {
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24 * 365
         });
-        
+
         return response(res,200,'otp verified successfully',{token,user});
     } catch (error) {
         console.error("Otp verification failed",error);
