@@ -4,6 +4,7 @@ const otpGenerate = require("../utils/otpGenerator");
 const response = require("../utils/responseHandler");
 const twilioService = require("../services/twilioService");
 const generateToken = require("../utils/generateToken");
+const { uploadFileToCloudinary } = require("../config/cloudinaryConfig");
 
 const sendOtp = async (req,res) => {
     const {phoneNumber, phoneSuffix, email} = req.body;
@@ -89,7 +90,7 @@ const verifyOtp = async (req,res) => {
         }
 
         const token = generateToken(user?._id);
-        res.cookie("token",token,{
+        res.cookie("auth_token",token,{
             httpOnly: true,
             maxAge: 1000 * 60 * 60 * 24 * 365
         });
@@ -101,7 +102,67 @@ const verifyOtp = async (req,res) => {
     }
 }
 
+const updateProfile = async (req,res) => {
+    const {username, agreed, about} = req.body;
+    const userId = req.user.userId;
+
+    try {
+        const user = await User.findById(userId);
+        const file = req.file;
+
+        if(file) {
+            const uploadResult = await uploadFileToCloudinary(file);
+            user.profilePicture = uploadResult?.secure_url;
+        } else if(req.body.profilePicture) {
+            user.profilePicture = req.body.profilePicture;
+        }
+        
+        if(username) user.username = username;
+        if(agreed)  user.agreed = agreed;
+        if(about) user.about = about;
+
+        await user.save();
+
+        return response(res,200,'user profile updated',user);
+    } catch (error) {
+        console.error("user profile updated filed",error);
+        return response(res,500,"Internal server error");
+    }
+}
+
+const checkAuth = async (req,res,next) => {
+    try {
+        const userId = req.user.userId;
+        if(!userId) {
+            return response(res,404,'unauthorized! please login');
+        }
+
+        const user = await User.findById(userId);
+        if(!user) {
+            return response(res,404,'user not found, invalid token');
+        }
+
+        return response(res,200,'user authenticated',user);
+    } catch (error) {
+        console.error("checkauth failed",error);
+        return response(res,500,"Internal server error");
+    }
+}
+
+const logout = async(req,res) => {
+    try {
+        res.cookie("auth_token","",{expires: new Date(0)});
+        return response(res,200,'user logout successfull');
+    } catch (error) {
+        console.error("logout failed",error);
+        return response(res,500,"Internal server error");
+    }
+}
+
 module.exports = {
     sendOtp,
-    verifyOtp
+    verifyOtp,
+    updateProfile,
+    logout,
+    checkAuth
 }
