@@ -6,6 +6,7 @@ const { multermiddleware } = require('../config/cloudinaryConfig');
 const router = express.Router();
 
 router.get('/check-auth',authMiddleware,authController.checkAuth);
+router.get('/users',authMiddleware,authController.getAllUsers);
 
 router.post('/send-otp',authController.sendOtp);
 router.post('/verify-otp',authController.verifyOtp);

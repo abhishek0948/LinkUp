@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 
 const connectDB = require('./config/dbConnect');
 const authRoutes = require('./routes/auth.Route');
+const chatRoutes = require('./routes/chat.Route');
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({extended:true}));
 
 app.use('/api/auth',authRoutes);
+app.use('/api/chat',chatRoutes);
 
 const startServer = async () => {
     try {

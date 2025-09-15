@@ -1,10 +1,12 @@
-const User = require("../models/User.Model");
 const sendOtpToEmail = require("../services/emailService");
 const otpGenerate = require("../utils/otpGenerator");
 const response = require("../utils/responseHandler");
 const twilioService = require("../services/twilioService");
 const generateToken = require("../utils/generateToken");
 const { uploadFileToCloudinary } = require("../config/cloudinaryConfig");
+
+const User = require("../models/User.Model");
+const Conversation = require('../models/Conversation.Model');
 
 const sendOtp = async (req,res) => {
     const {phoneNumber, phoneSuffix, email} = req.body;
@@ -159,10 +161,41 @@ const logout = async(req,res) => {
     }
 }
 
+const getAllUsers = async (req,res) => {
+    const loggedInUser = req.user?.userId;
+    try {
+        const users = await User.find({_id:{$ne:loggedInUser}}).select(
+            "username profilePicture lastSeen isOnline about phoneNumber phoneSuffix"
+        ).lean();
+
+        const usersWithConversation = await Promise.all(
+            users.map(async (user) => {
+                const conversation = await Conversation.findOne({
+                    participants:{$all : [loggedInUser,user?._id]}
+                }).populate({
+                    path:"lastMessage",
+                    select: 'content createdAt sender receiver'
+                }).lean();
+
+                return {
+                    ...user,
+                    conversation: conversation | null
+                }
+            })
+        )
+
+        return response(res,200,'fetched all users',usersWithConversation);
+    } catch (error) {
+        console.error("error fetching all user conversations",error);
+        return response(res,500,'Internal server error');
+    }
+}
+
 module.exports = {
     sendOtp,
     verifyOtp,
     updateProfile,
     logout,
-    checkAuth
+    checkAuth,
+    getAllUsers
 }
