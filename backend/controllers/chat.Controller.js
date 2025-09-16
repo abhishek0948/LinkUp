@@ -67,6 +67,16 @@ const sendMessage = async (req,res) => {
         const populatedMessage = await Message.findOne({ _id: message?._id })
         .populate("sender","username profilePicture")
         .populate("receiver","username profilePicture")
+        
+        // emit message sending event
+        if(req.io && req.socketUserMap) {
+            const receiverSocketId = req.socketUserMap.get(receiverId);
+            if(receiverSocketId) {
+                req.io.to(receiverSocketId).emit("receive_message",populatedMessage);
+                message.messageStatus = "delivered";
+                await message.save();
+            }
+        }
 
         return response(res,201,"message send successfully",populatedMessage);
     } catch (error) {
@@ -153,6 +163,20 @@ const markAsRead = async (req,res) => {
             $set: {messageStatus: "read"}
         })
 
+        // emit to notify the original sender
+        if(req.io && req.socketUserMap) {
+            for(const message of messages) {
+                const senderSocketId = req.socketUserMap.get(message.sender.toString());
+                if(senderSocketId) {
+                    const updatedMessage = {
+                        _id : message._id,
+                        messageStatus: "read"
+                    };
+                    req.io.to(senderSocketId).emit("message_read",updatedMessage);
+                }
+            }
+        }
+        
         return response(res,200,"message mark as read",messages);
     } catch (error) {
         console.log("Error marking messages",error);
@@ -176,6 +200,13 @@ const deleteMessage = async(req,res) => {
 
         await Message.deleteOne({ _id: messageId });
 
+        if(req.io && req.socketUserMap) {
+            const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
+            if(receiverSocketId) {
+                req.io.to(receiverSocketId).emit("message_deleted",messageId);
+            }
+        }
+        
         return response(res,200,"message deleted successfully",message);
     } catch (error) {
         console.log("Error deleting message",error);
