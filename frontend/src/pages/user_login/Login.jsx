@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { motion } from "framer-motion";
-import { FaChevronDown, FaLink, FaUser } from "react-icons/fa6";
+import { FaArrowLeft, FaChevronDown, FaLink, FaUser } from "react-icons/fa6";
 
 import useLoginStore from "../../store/useLoginStore";
 import useUserStore from "../../store/useUserStore";
@@ -15,7 +15,11 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 
 import ProgressBar from "./ProgressBar";
-import { sendOtp } from "../../services/user.service";
+import {
+  sendOtp,
+  updateUserProfile,
+  verifyOtp,
+} from "../../services/user.service";
 import { toast } from "react-toastify";
 
 const avatars = [
@@ -52,8 +56,7 @@ const loginValidationSchema = yup
     "at-least-one",
     "Either email or phone number is required",
     function (value) {
-      const { phoneNumber, email } = this.parent;
-      return !!(phoneNumber || email);
+      return !!(value?.phoneNumber || value?.email);
     }
   );
 
@@ -76,7 +79,7 @@ const Login = () => {
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [showDropDown, setShowDropDown] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [loading,setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const { step, setStep, userPhoneData, setUserPhoneData, resetLoginState } =
@@ -119,21 +122,28 @@ const Login = () => {
     );
   }, [countries, searchTerm]);
 
-  const onLoginSubmit = async() => {
+  const onLoginSubmit = async () => {
     try {
       setLoading(true);
-      if(email) {
-        const response = await sendOtp(null,null,email);
-        if(response.status === 'success') {
+      if (email) {
+        const response = await sendOtp(null, null, email);
+        if (response.status === "success") {
           toast.info("Otp sent to your email");
-          setUserPhoneData({email});
+          setUserPhoneData({ email });
           setStep(2);
         }
       } else {
-        const response = await(sendOtp(phoneNumber,selectedCountry.dialCode,null));
-        if(response.status === 'success') {
+        const response = await sendOtp(
+          phoneNumber,
+          selectedCountry.dialCode,
+          null
+        );
+        if (response.status === "success") {
           toast.info("Otp sent to your phone number");
-          setUserPhoneData({phoneNumber,phoneSuffix:selectedCountry.dialCode});
+          setUserPhoneData({
+            phoneNumber,
+            phoneSuffix: selectedCountry.dialCode,
+          });
           setStep(2);
         }
       }
@@ -143,8 +153,100 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  }
-  
+  };
+
+  const onOtpSubmit = async () => {
+    try {
+      setLoading(true);
+      if (!userPhoneData) {
+        throw new Error("Phone or email data is missing");
+      }
+
+      const otpString = otp.join("");
+      let response;
+      if (userPhoneData?.email) {
+        response = await verifyOtp(null, null, userPhoneData.email, otpString);
+      } else {
+        response = await verifyOtp(
+          userPhoneData.phoneNumber,
+          userPhoneData.phoneSuffix,
+          null,
+          otpString
+        );
+      }
+
+      if (response.status === "success") {
+        toast.success("Otp verified successfully");
+        const user = response.data.user;
+        if (user?.username && user?.profilePicture) {
+          setUser(user);
+          toast.success("Welcome back to LinkUp");
+          navigate("/");
+          resetLoginState();
+        } else {
+          setStep(3);
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      setError(error.message || "Failed to verify otp");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePictureFile(file);
+      setProfilePicture(URL.createObjectURL(file));
+    }
+  };
+
+  const onProfileSubmit = async (data) => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("username", data.username);
+      formData.agreed("agreed", data.agreed);
+      if (profilePictureFile) {
+        formData.append("media", profilePictureFile);
+      } else {
+        formData.append("profilePicture", selectedAvatar);
+      }
+
+      const response = await updateUserProfile(formData);
+      if (response.status === "success") {
+        toast.success("Welcome to LinkUp");
+        navigate("/");
+        resetLoginState();
+      } else {
+        toast.error("Error updating profile");
+      }
+    } catch (error) {
+      console.log(error);
+      setError(error.message || "Failed to update profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    setOtpValue("otp", newOtp.join(""));
+    if (value && index > 5) {
+      document.getElementById(`otp-${index + 1}`).focus();
+    }
+  };
+
+  const handleBack = () => {
+    setStep(1);
+    setUserPhoneData(null);
+    setOtp(["", "", "", "", "", ""]);
+    setError("");
+  };
   return (
     <div
       className={`min-h-screen ${
@@ -190,7 +292,10 @@ const Login = () => {
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
         {step === 1 && (
-          <form className="space-y-4 ">
+          <form
+            className="space-y-4"
+            onSubmit={handleLoginSubmit(onLoginSubmit)}
+          >
             <p
               className={`text-center ${
                 theme === "dark" ? "text-gray-300" : "text-gray-600"
@@ -332,6 +437,65 @@ const Login = () => {
             >
               {loading ? <Spinner /> : "Send OTP"}
             </button>
+          </form>
+        )}
+
+        {step === 2 && (
+          <form className="space-y-4" onSubmit={handleOtpSubmit(onOtpSubmit)}>
+            <p
+              className={`text-center ${
+                theme === "dark" ? "text-gray-300" : "text-gray-600"
+              } mb-4`}
+            >
+              Please enter the 6-digit send to your
+              {userPhoneData ? userPhoneData?.phoneSuffix : "Email"}{" "}
+              {userPhoneData?.phoneNumber && userPhoneData?.phoneNumber}
+            </p>
+
+            <div className="flex justify-between">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  className={`w-12 h-12 text-center border ${
+                    theme === "dark"
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300"
+                  } rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 ${
+                    otpErrors.otp ? "border-red-500" : ""
+                  }`}
+                />
+              ))}
+            </div>
+
+            {otpErrors.otp && (
+              <p className={`text-red-500 text-sm`}>{otpErrors.otp.message}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-blue-400 text-white py-2 rounded-md hover:bg-blue-500 transition"
+            >
+              {loading ? <Spinner /> : "Verify OTP"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBack}
+              className={`w-full mt-2 ${
+                theme === "dark"
+                  ? "bg-gray-700 text-gray-300"
+                  : "bg-gray-200 text-gray-700"
+              } py-2 rounded-md hover:bg-gray-300 transition flex items-center justify-center`}
+            >
+              <FaArrowLeft className="mr-2" />
+              <span>Wrong number? Go back</span>
+            </button>
+
           </form>
         )}
       </motion.div>
