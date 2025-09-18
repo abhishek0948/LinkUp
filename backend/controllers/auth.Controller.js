@@ -144,7 +144,7 @@ const checkAuth = async (req,res,next) => {
             return response(res,404,'user not found, invalid token');
         }
 
-        return response(res,200,'user authenticated',{user});
+        return response(res,200,'user authenticated',user);
     } catch (error) {
         console.error("checkauth failed",error);
         return response(res,500,"Internal server error");
