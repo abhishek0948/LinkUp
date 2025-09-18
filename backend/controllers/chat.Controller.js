@@ -77,7 +77,7 @@ const sendMessage = async (req,res) => {
                 await message.save();
             }
         }
-
+        
         return response(res,201,"message send successfully",populatedMessage);
     } catch (error) {
         console.log("Error Sending message");

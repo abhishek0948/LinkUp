@@ -43,7 +43,6 @@ export const checkUserAuth = async() => {
     try {
         const response = await axiosInstance.get('/auth/check-auth')
 
-        console.log(response);
         if(response.data.status === "success") {
             return {isAuthenticated: true,user: response.data?.data};
         } else if(response.data.status === "error") {
@@ -67,7 +66,6 @@ export const logoutUser = async() => {
 export const getAllUsers = async() => {
     try {
         const response = await axiosInstance.get('/auth/users')
-
         return response.data;
     } catch (error) {
         throw error.response ? error.response.data : error.message;
