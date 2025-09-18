@@ -19,7 +19,7 @@ const ProfileForm = ({ onSubmit, loading, theme }) => {
     resolver: yupResolver(profileValidationSchema),
     defaultValues: {
       agreed: false,
-      selectedAvatar: 'https://api.dicebear.com/6.x/avataaars/svg?seed=Felix' // Default avatar
+      selectedAvatar: 'https://api.dicebear.com/6.x/avataaars/svg?seed=Felix' 
     }
   });
 

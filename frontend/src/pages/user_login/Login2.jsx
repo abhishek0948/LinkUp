@@ -95,6 +95,7 @@ const Login = () => {
 
       const response = await updateUserProfile(formData);
 
+      console.log(response);
       if (response.status === "success") {
         setUser(response.data.user);
         toast.success("Welcome to LinkUp! Your profile is ready.");
