@@ -21,7 +21,7 @@ const ChatList = ({ contacts }) => {
     contact?.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  console.log(filteredContacts);
+  // console.log("Printing filtered Contacts",filteredContacts);
   
   return (
     <div
