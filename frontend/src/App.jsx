@@ -46,7 +46,7 @@ function App() {
           <Route element={<ProtectedRoute/>}>
             <Route path="/" element={<HomePage/>} />
             <Route path="/user-profile" element={<UserDetails />} />
-            <Route path="/settings" element={<Setting />} />
+            <Route path="/setting" element={<Setting />} />
             <Route path="/status" element={<Status />} />
           </Route>
         </Routes>

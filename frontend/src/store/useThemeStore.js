@@ -5,7 +5,7 @@ const useThemeStore = create(
   persist(
     (set) => ({
       theme: "light",
-      setTheme: (theme) => set(theme)
+      setTheme: (theme) => set({theme})
     }),
     {
       name: "theme-storage",
