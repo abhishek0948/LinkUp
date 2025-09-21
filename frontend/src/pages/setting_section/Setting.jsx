@@ -50,7 +50,7 @@ const Setting = () => {
         }`}
       >
         <div
-          className={`w-[400px] border-r ${
+          className={`w-full border-r ${
             theme === "dark" ? "border-gray-600" : "border-gray-200"
           }`}
         >

@@ -51,7 +51,7 @@ const Layout = ({
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "tween" }}
-              className={`w-1/2 md:2/5 h-full ${isMobile ? "pb-16" : ""}`}
+              className={`w-full md:2/5 h-full ${isMobile ? "pb-16" : ""}`}
             >
               {children}
             </motion.div>
