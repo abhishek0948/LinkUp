@@ -27,7 +27,18 @@ export const useChatStore = create((set, get) => ({
     socket.off("message_deleted");
 
     // For receiving message
-    socket.on("receive_message", (message) => {});
+    socket.on("receive_message", (message) => {
+      console.log("In the receive message event....")
+      const { currentConversation, currentUser, receiveMessage } = get();
+      if (!message || !message._id) return;
+      receiveMessage(message);
+      if (
+        message.conversation === currentConversation &&
+        message.receiver?._id === currentUser?._id
+      ) {
+        get().markMessagesAsRead();
+      }
+    });
 
     // event for sending message
     socket.on("send_message", (message) => {
@@ -68,7 +79,7 @@ export const useChatStore = create((set, get) => ({
       console.log("Message error", error);
     });
 
-    // For handling typing users 
+    // For handling typing users
     socket.on("user_typing", ({ userId, conversationId, isTyping }) => {
       set((state) => {
         const newTypingUsers = new Map(state.typingUsers);
@@ -107,9 +118,9 @@ export const useChatStore = create((set, get) => ({
           socket.emit("get_user_status", otherUser._id, (status) => {
             set((state) => {
               const newOnlineUsers = new Map(state.onlineUsers);
-              newOnlineUsers.set(state.userId, {
-                isOnline: state.isOnline,
-                lastSeen: state.lastSeen,
+              newOnlineUsers.set(otherUser._id, {
+                isOnline: status.isOnline,
+                lastSeen: status.lastSeen,
               });
               return { onlineUsers: newOnlineUsers };
             });
@@ -117,14 +128,12 @@ export const useChatStore = create((set, get) => ({
         }
       });
     }
-
   },
 
   fetchConversation: async () => {
     set({ loading: true, error: null });
     try {
       const { data } = await axiosInstance.get("/chats/conversations");
-      // console.log("Fetch conversation data",data);
       set({ conversations: data });
       get().initSocketListners();
       return data;
@@ -173,11 +182,11 @@ export const useChatStore = create((set, get) => ({
     const { conversations } = get();
     let conversationId = null;
     if (conversations?.data?.length > 0) {
-      const conversation =
-        conversations.data.find((conv) =>
-          conv.participants.some((p) => p._id === senderId)
-          && conv.participants.some((p) => p._id === receiverId)
-        );
+      const conversation = conversations.data.find(
+        (conv) =>
+          conv.participants.some((p) => p._id === senderId) &&
+          conv.participants.some((p) => p._id === receiverId)
+      );
 
       if (conversation) {
         conversationId = conversation._id;
@@ -227,14 +236,14 @@ export const useChatStore = create((set, get) => ({
 
       return messageData;
     } catch (error) {
-      console.error("Error sending message",error);
+      console.error("Error sending message", error);
       set((state) => ({
         messages: state.messages.map((msg) =>
-          msg._id === tempId ? {...msg,messageStatus: "failed"} : msg
+          msg._id === tempId ? { ...msg, messageStatus: "failed" } : msg
         ),
-        error: error?.message
+        error: error?.message,
       }));
-      throw error
+      throw error;
     }
   },
 
@@ -314,7 +323,7 @@ export const useChatStore = create((set, get) => ({
         });
       }
     } catch (error) {
-      console.log("Error marking as read messages");
+      console.error("Error marking as read messages");
     }
   },
 
@@ -347,6 +356,7 @@ export const useChatStore = create((set, get) => ({
   startTyping: async (receiverId) => {
     const { currentConversation } = get();
     const socket = getSocket();
+
     if (socket && currentConversation && receiverId) {
       socket.emit("typing_start", {
         conversationId: currentConversation,
@@ -368,7 +378,6 @@ export const useChatStore = create((set, get) => ({
 
   isUserTyping: (userId) => {
     const { typingUsers, currentConversation } = get();
-   
     if (
       !currentConversation ||
       !typingUsers.has(currentConversation) ||
@@ -376,9 +385,6 @@ export const useChatStore = create((set, get) => ({
     ) {
       return false;
     }
-
-    const temp = typingUsers.get(currentConversation).has(userId);
-    console.log("Temp",temp);
     return typingUsers.get(currentConversation).has(userId);
   },
 

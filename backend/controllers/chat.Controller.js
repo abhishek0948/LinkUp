@@ -69,6 +69,9 @@ const sendMessage = async (req,res) => {
         .populate("receiver","username profilePicture")
         
         // emit message sending event
+        // console.log("Req.io object is:",req.io);
+        // console.log("Req.socketUserMap is:",req.socketUserMap);
+
         if(req.io && req.socketUserMap) {
             const receiverSocketId = req.socketUserMap.get(receiverId);
             if(receiverSocketId) {
@@ -80,7 +83,7 @@ const sendMessage = async (req,res) => {
         
         return response(res,201,"message send successfully",populatedMessage);
     } catch (error) {
-        console.log("Error Sending message");
+        console.log("Error Sending message",error);
         return response(res,500,'Internal server error');
     }
 }
@@ -173,6 +176,7 @@ const markAsRead = async (req,res) => {
                         messageStatus: "read"
                     };
                     req.io.to(senderSocketId).emit("message_read",updatedMessage);
+                    await message.save();
                 }
             }
         }
@@ -203,7 +207,7 @@ const deleteMessage = async(req,res) => {
         if(req.io && req.socketUserMap) {
             const receiverSocketId = req.socketUserMap.get(message.receiver.toString());
             if(receiverSocketId) {
-                req.io.to(receiverSocketId).emit("message_deleted",messageId);
+                req.io.to(receiverSocketId).emit("message_deleted",{deletedMessageId:messageId});
             }
         }
         

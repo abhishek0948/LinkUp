@@ -209,7 +209,7 @@ const ChatWindow = ({ selectedContact, setSelectedContact, isMobile }) => {
 
   const handleVideoCall = () => {
     if (selectedContact && online) {
-      const { initiateCall } = useVideoCallStore().getState();
+      const { initiateCall } = useVideoCallStore.getState();
 
       const avatar = selectedContact.profilePicture;
 
