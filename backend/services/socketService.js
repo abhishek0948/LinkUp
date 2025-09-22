@@ -1,6 +1,7 @@
 const {Server} = require("socket.io");
 const User = require("../models/User.Model");
 const Message = require("../models/Message.Model");
+const handleVideoCallEvent = require("./video-call-events");
 
 const onlineUsers = new Map();
 const typingUsers = new Map();
@@ -15,6 +16,8 @@ const initializeSocket = (server) => {
         pingTimeout: 600000
     })
 
+    console.log("Online users",onlineUsers);
+
     io.on("connection",(socket) => {
         console.log(`User connected with ${socket.id}`);
         let userId = null;
@@ -22,6 +25,7 @@ const initializeSocket = (server) => {
         socket.on("user_connected",async(connectingUserId) => {
             try {
                 userId = connectingUserId;
+                socket.userId = userId
                 onlineUsers.set(userId,socket.id);
                 socket.join(userId);
 
@@ -181,6 +185,9 @@ const initializeSocket = (server) => {
             }
         });
 
+        // Handle video call events
+        handleVideoCallEvent(socket,io,onlineUsers);
+        
         const handleDisconnected = async() => {
             if(!userId) {
                 return ;
