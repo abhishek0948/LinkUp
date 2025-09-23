@@ -27,6 +27,8 @@ const VideoCallManager = ({ socket }) => {
       callId,
       callType,
     }) => {
+      // console.log("Incoming call by:",callerName);
+
       setIncomingCall({
         callerId,
         callerName,
@@ -80,6 +82,7 @@ const VideoCallManager = ({ socket }) => {
       setCallModalOpen(true);
       setCallStatus("calling");
 
+      // console.log("Call initiated....");
       // emit initiate
       socket.emit("initiate_call", {
         callerId: user?._id,

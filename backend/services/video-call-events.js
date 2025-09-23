@@ -8,6 +8,7 @@ const handleVideoCallEvent = (socket, io, onlineUsers) => {
       if (receiverSocketId) {
         const callId = `${callerId}-${receiverId}-${Date.now()}`;
 
+        // console.log("Call initaited .......")
         io.to(receiverSocketId).emit("incoming_call", {
           callerId,
           callerName: callerInfo.username,
@@ -30,7 +31,7 @@ const handleVideoCallEvent = (socket, io, onlineUsers) => {
       io.to(callerSocketId).emit("call_accepted", {
         callerName: receiverInfo.username,
         callerAvatar: receiverInfo.profilePicture,
-        callId,
+        callId
       });
     } else {
       console.log(`server:Caller ${callerId} not found`);
@@ -68,7 +69,7 @@ const handleVideoCallEvent = (socket, io, onlineUsers) => {
     if(receiverSocketId) {
         io.to(receiverSocketId).emit("webrtc_offer",{
             offer,
-            sender:socket.userId,
+            senderId:socket.userId,
             callId
         })
         console.log(`server: offer forwarded to ${receiverId}`)
@@ -84,7 +85,7 @@ const handleVideoCallEvent = (socket, io, onlineUsers) => {
     if(receiverSocketId) {
         io.to(receiverSocketId).emit("webrtc_answer",{
             answer,
-            sender:socket.userId,
+            senderId:socket.userId,
             callId
         })
         console.log(`server ans forwarded to ${receiverId}`)
@@ -98,12 +99,12 @@ const handleVideoCallEvent = (socket, io, onlineUsers) => {
     const receiverSocketId = onlineUsers.get(receiverId);
 
     if(receiverSocketId) {
-        io.to(receiverSocketId).emit("webrtc_answer",{
+        io.to(receiverSocketId).emit("webrtc_ice_candidate",{
             candidate,
-            sender:socket.userId,
+            senderId:socket.userId,
             callId
         })
-        console.log(`server ans forwarded to ${receiverId}`)
+        console.log(`server ice candidate event...`)
     } else {
         console.log(`server: receiver ${receiverId} not found the ICE candidate`)
     }

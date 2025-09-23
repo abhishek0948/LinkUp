@@ -166,11 +166,11 @@ const UserDetails = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className={`w-full px-3 py-2 rounded-xl border focus:ring-2 focus:ring-blue-400 focus:outline-none ${
-                    theme === "dark" ? "bg-gray-700" : "bg-gray-50"
+                    theme === "dark" ? "bg-gray-700 " : "bg-gray-50"
                   }`}
                 />
               ) : (
-                <span className="text-lg">{name}</span>
+                <span className="text-lg text-black">{name}</span>
               )}
 
               {isEditingName ? (
@@ -218,7 +218,7 @@ const UserDetails = () => {
                   }`}
                 />
               ) : (
-                <span className="text-lg">{about}</span>
+                <span className="text-lg text-gray-800">{about}</span>
               )}
 
               {isEditingAbout ? (

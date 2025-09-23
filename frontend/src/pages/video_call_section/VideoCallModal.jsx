@@ -8,6 +8,7 @@ import {
   FaPhoneSlash,
   FaTimes,
   FaVideo,
+  FaVideoSlash,
 } from "react-icons/fa";
 
 const VideoCallModal = ({ socket }) => {
@@ -43,6 +44,7 @@ const VideoCallModal = ({ socket }) => {
     processQueuedIceCandidates,
     toggleVideo,
     toggleAudio,
+    clearIncoming,
   } = useVideoCallStore();
 
   const rtcConfiguration = {
@@ -101,12 +103,15 @@ const VideoCallModal = ({ socket }) => {
   // Initialize media stream
   const initializeMedia = async (video = true) => {
     try {
+      console.log("initializing local stream");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: video ? { width: 640, height: 480 } : false,
         audio: true,
       });
 
+      // console.log("Local stream initialized");
       setLocalStream(stream);
+      return stream;
     } catch (error) {
       console.error("media error", error);
       throw error;
@@ -120,6 +125,7 @@ const VideoCallModal = ({ socket }) => {
     // add local tracks immidiately
     if (stream) {
       stream.getTracks().forEach((track) => {
+        console.log("Adding track for", role);
         pc.addTrack(track, stream);
       });
     }
@@ -139,16 +145,16 @@ const VideoCallModal = ({ socket }) => {
           });
         }
       }
+    };
 
-      // handle remote
-      pc.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-        } else {
-          const stream = new MediaStream([event.track]);
-          setRemoteStream(stream);
-        }
-      };
+    // handle remote
+    pc.ontrack = (event) => {
+      if (event.streams && event.streams[0]) {
+        setRemoteStream(event.streams[0]);
+      } else {
+        const stream = new MediaStream([event.track]);
+        setRemoteStream(stream);
+      }
     };
 
     pc.onconnectionstatechange = (event) => {
@@ -310,7 +316,10 @@ const VideoCallModal = ({ socket }) => {
     // Reciever answer (caller)
     const handleWebRTCAnswer = async ({ answer, senderId, callId }) => {
       if (!peerConnection) return;
-      if (peerConnection.signalingState === "closed") return;
+      if (peerConnection.signalingState === "closed") {
+        console.log("Caller: Peer Connection is closed");
+        return;
+      }
 
       try {
         await peerConnection.setRemoteDescription(
@@ -375,7 +384,7 @@ const VideoCallModal = ({ socket }) => {
           theme === "dark" ? "bg-gray-900" : "bg-white"
         }`}
       >
-        {incomingCall && isCallerActive && (
+        {incomingCall && !isCallerActive && (
           <div className="flex flex-col items-center justify-center h-full p-8">
             <div className="text-center mb-8">
               <div className="w-32 h-32 rounded-full bg-gray-300 mx-auto overflow-hidden">
@@ -406,7 +415,7 @@ const VideoCallModal = ({ socket }) => {
             <div className="flex space-x-6">
               <button
                 className="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full 
-               flex items-center justify-center text-white transition-colors"
+               flex items-center justify-center text-white transition-colors "
                 onClick={handleRejectCall}
               >
                 <FaPhoneSlash className="w-6 h-6" />
@@ -481,8 +490,8 @@ const VideoCallModal = ({ socket }) => {
             <div className="absolute top-4 left-4">
               <div
                 className={`px-4 py-2 rounded-full ${
-                  theme === "dark" ? "bg-gray-800" : "bg-white"
-                } bg-opacity-75`}
+                  theme === "dark" ? "bg-gray-800/75" : "bg-white/75"
+                }`}
               >
                 <p
                   className={`text-sm ${
@@ -499,25 +508,27 @@ const VideoCallModal = ({ socket }) => {
               <div className="flex space-x-4">
                 {callType === "video" && (
                   <button
+                    onClick={toggleVideo}
                     className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
                       isVideoEnabled
                         ? "bg-gray-600 hover:bg-gray-700 text-white"
-                        : "bg-red-500 hover:bg-red-600 text-white"
+                        : "bg-red-500 hover:bg-red-700 text-white"
                     }`}
                   >
                     {isVideoEnabled ? (
                       <FaVideo className="w-5 h-5" />
                     ) : (
-                      <FaPhoneSlash className="w-5 h-5" />
+                      <FaVideoSlash className="w-5 h-5" />
                     )}
                   </button>
                 )}
 
                 <button
+                  onClick={toggleAudio}
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
                     isAudioEnabled
                       ? "bg-gray-600 hover:bg-gray-700 text-white"
-                      : "bg-red-500 hover:bg-red-600 text-white"
+                      : "bg-red-500 hover:bg-red-700 text-white"
                   }`}
                 >
                   {isAudioEnabled ? (
@@ -528,7 +539,7 @@ const VideoCallModal = ({ socket }) => {
                 </button>
 
                 <button
-                  className="w-16 h-16 bg-red-500 hover:bg-red-600 rounded-full 
+                  className="w-12 h-12 bg-red-500 hover:bg-red-700 rounded-full 
                flex items-center justify-center text-white transition-colors"
                   onClick={handleEndCall}
                 >
