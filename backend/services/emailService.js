@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 
 transporter.verify((error,success) => {
     if(error) {
-        console.error("Gmail Verification failed");
+        console.error("Gmail Verification failed",error);
     } else {
         console.log("Gmail configured successfully");
     }
