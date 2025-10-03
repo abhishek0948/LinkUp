@@ -44,6 +44,7 @@ const sendOtpToEmail = async(email,otp) => {
     </div>
   `;
 
+  console.log("In the sendotpToMail service...")
   await transporter.sendMail({
     from: `LinkUp <${process.env.EMAIL_USER}>`,
     to: email,

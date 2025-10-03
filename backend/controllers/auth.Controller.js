@@ -41,7 +41,8 @@ const sendOtp = async (req,res) => {
         await twilioService.sendOtpToPhoneNumber(fullPhoneNumber)
         return response(res,200,'Otp sent successfully',user);
     } catch (error) {
-        return response(res,500,'Internal server error',)
+        console.error("error sending email:",error);
+        return response(res,500,'Internal server error')
     }
 }
 
