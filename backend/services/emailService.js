@@ -1,27 +1,29 @@
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
+const axios = require('axios');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_USER, 
-    pass: process.env.BREVO_SMTP_KEY, 
-  },
-});
+// const transporter = nodemailer.createTransport({
+//   host: 'smtp-relay.brevo.com',
+//   port: 587,
+//   secure: false,
+//   auth: {
+//     user: process.env.BREVO_USER, 
+//     pass: process.env.BREVO_SMTP_KEY, 
+//   },
+// });
 
-transporter.verify((error,success) => {
-    if(error) {
-        console.error("Gmail Verification failed",error);
-    } else {
-        console.log("Gmail configured successfully");
-    }
-})
+// transporter.verify((error,success) => {
+//     if(error) {
+//         console.error("Gmail Verification failed",error);
+//     } else {
+//         console.log("Gmail configured successfully");
+//     }
+// })
 
 const sendOtpToEmail = async(email,otp) => {
+    const subject = `Otp verification code`;
     const html = `
     <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
       <h2 style="color: #075e54;">🔐 LinkUp Verification</h2>
@@ -46,13 +48,47 @@ const sendOtpToEmail = async(email,otp) => {
     </div>
   `;
 
-  console.log("In the sendotpToMail service...")
-  await transporter.sendMail({
-    from: `LinkUp <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: 'Your LinkUp verification code',
-    html,
-  })
+  try {
+    const apiKey = process.env.BREVO_API_KEY; 
+
+    const response = await axios.post(
+      'https://api.brevo.com/v3/smtp/email',
+      {
+        sender: {
+          name: 'Link Up',
+          email: 'abhishekkaratagi325@gmail.com', 
+        },
+        to: [
+          {
+            email: email,
+          },
+        ],
+        subject: subject,
+        htmlContent: html,
+      },
+      {
+        headers: {
+          'api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log('Email sent successfully via Brevo API:', response.data);
+    return response.data;
+
+  } catch (error) {
+    console.error('Error sending email with Brevo API:', error.response ? error.response.data : error.message);
+    throw error;
+  }
+
+  // console.log("In the sendotpToMail service...")
+  // await transporter.sendMail({
+  //   from: `LinkUp <${process.env.EMAIL_USER}>`,
+  //   to: email,
+  //   subject: 'Your LinkUp verification code',
+  //   html,
+  // })
 }
 
 module.exports = sendOtpToEmail
