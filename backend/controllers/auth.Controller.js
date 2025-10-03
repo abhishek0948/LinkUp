@@ -94,6 +94,8 @@ const verifyOtp = async (req,res) => {
         const token = generateToken(user?._id);
         res.cookie("auth_token",token,{
             httpOnly: true,
+            secure: true, 
+            sameSite: 'none', 
             maxAge: 1000 * 60 * 60 * 24 * 365
         });
 
